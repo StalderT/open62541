@@ -1447,6 +1447,8 @@ UA_Server_setAsyncWriteResult(UA_Server *server, const UA_DataValue *value,
  * The operation timeout is defined in milliseconds. A timeout of zero means
  * infinite. */
 
+#ifdef UA_ENABLE_METHODCALLS
+
 typedef void(*UA_ServerAsyncReadResultCallback)
     (UA_Server *server, void *asyncOpContext, const UA_DataValue *result);
 typedef void(*UA_ServerAsyncWriteResultCallback)
@@ -1465,7 +1467,6 @@ UA_Server_write_async(UA_Server *server, const UA_WriteValue *operation,
                       UA_ServerAsyncWriteResultCallback callback,
                       void *asyncOpContext, UA_UInt32 timeout);
 
-#ifdef UA_ENABLE_METHODCALLS
 UA_StatusCode UA_EXPORT UA_THREADSAFE
 UA_Server_call_async(UA_Server *server, const UA_CallMethodRequest *operation,
                      UA_ServerAsyncMethodResultCallback callback,
