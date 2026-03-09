@@ -252,6 +252,7 @@ struct UA_Subscription {
 
     /* Runtime information */
     UA_SubscriptionState state;
+    UA_Boolean enabled;
     UA_Boolean late;
     UA_Boolean wasTransferred; /* Set to true when this subscription was
                                 * transferred to another session. Used to
