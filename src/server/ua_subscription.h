@@ -98,6 +98,8 @@ typedef TAILQ_HEAD(NotificationQueue, UA_Notification) NotificationQueue;
 typedef TAILQ_HEAD(NotificationMessageQueue, UA_NotificationMessageEntry)
     NotificationMessageQueue;
 
+ZIP_HEAD(UA_MonitoredItemIdTree, UA_MonitoredItem);
+
 /*****************/
 /* MonitoredItem */
 /*****************/
@@ -123,6 +125,7 @@ typedef enum {
 struct UA_MonitoredItem {
     UA_DelayedCallback delayedFreePointers;
     LIST_ENTRY(UA_MonitoredItem) listEntry; /* Linked list in the Subscription */
+    ZIP_ENTRY(UA_MonitoredItem) idTreeEntry; /* Index by Id */
     UA_Subscription *subscription;          /* Always non-NULL */
     UA_UInt32 monitoredItemId;
 
@@ -273,6 +276,7 @@ struct UA_Subscription {
     /* MonitoredItems */
     UA_UInt32 lastMonitoredItemId; /* increase the identifiers */
     LIST_HEAD(, UA_MonitoredItem) monitoredItems;
+    struct UA_MonitoredItemIdTree monitoredItemsById;
     UA_UInt32 monitoredItemsSize;
 
     /* MonitoredItems that are sampled in every publish callback (with the

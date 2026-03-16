@@ -253,6 +253,19 @@ UA_Notification_dequeueSub(UA_Notification *n) {
 /* Subscription */
 /****************/
 
+static enum ZIP_CMP
+UA_MonitoredItemIdTree_cmp(const UA_UInt32 *a,
+                           const UA_UInt32 *b) {
+    if(*a < *b)
+        return ZIP_CMP_LESS;
+    if(*a > *b)
+        return ZIP_CMP_MORE;
+    return ZIP_CMP_EQ;
+}
+
+ZIP_FUNCTIONS(UA_MonitoredItemIdTree, UA_MonitoredItem, idTreeEntry,
+              UA_UInt32, monitoredItemId, UA_MonitoredItemIdTree_cmp)
+
 UA_Subscription *
 UA_Subscription_new(void) {
     /* Allocate the memory */
@@ -269,6 +282,7 @@ UA_Subscription_new(void) {
 
     TAILQ_INIT(&newSub->retransmissionQueue);
     TAILQ_INIT(&newSub->notificationQueue);
+    ZIP_INIT(&newSub->monitoredItemsById);
     return newSub;
 }
 
@@ -354,12 +368,8 @@ Subscription_resetLifetime(UA_Subscription *sub) {
 
 UA_MonitoredItem *
 UA_Subscription_getMonitoredItem(UA_Subscription *sub, UA_UInt32 monitoredItemId) {
-    UA_MonitoredItem *mon;
-    LIST_FOREACH(mon, &sub->monitoredItems, listEntry) {
-        if(mon->monitoredItemId == monitoredItemId)
-            break;
-    }
-    return mon;
+    return ZIP_FIND(UA_MonitoredItemIdTree, &sub->monitoredItemsById,
+                    &monitoredItemId);
 }
 
 static void
@@ -1287,6 +1297,7 @@ UA_MonitoredItem_register(UA_Server *server, UA_MonitoredItem *mon) {
     mon->monitoredItemId = ++sub->lastMonitoredItemId;
     mon->subscription = sub;
     LIST_INSERT_HEAD(&sub->monitoredItems, mon, listEntry);
+    ZIP_INSERT(UA_MonitoredItemIdTree, &sub->monitoredItemsById, mon);
     sub->monitoredItemsSize++;
     server->monitoredItemsSize++;
 
@@ -1333,6 +1344,7 @@ UA_Server_unregisterMonitoredItem(UA_Server *server, UA_MonitoredItem *mon) {
     /* Deregister in Subscription and server */
     sub->monitoredItemsSize--;
     LIST_REMOVE(mon, listEntry);
+    ZIP_REMOVE(UA_MonitoredItemIdTree, &sub->monitoredItemsById, mon);
     server->monitoredItemsSize--;
 }
 
