@@ -1673,7 +1673,7 @@ static void
 triggerImmediateDataChange(UA_Server *server, UA_Session *session,
                            UA_Node *node, const UA_WriteValue *wvalue) {
     UA_MonitoredItem *mon = node->head.monitoredItems;
-    for(; mon != NULL; mon = mon->sampling.nodeListNext) {
+    for(; mon != NULL; mon = mon->sampling.nodeList.next) {
         if(mon->itemToMonitor.attributeId != wvalue->attributeId)
             continue;
         /* TODO: Allow async read for datachanges */

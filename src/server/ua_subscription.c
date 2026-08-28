@@ -1244,7 +1244,11 @@ addMonitoredItemBackpointer(UA_Server *server, UA_Session *session,
                             UA_Node *node, void *data) {
     UA_MonitoredItem *mon = (UA_MonitoredItem*)data;
     UA_assert(mon != (UA_MonitoredItem*)~0);
-    mon->sampling.nodeListNext = node->head.monitoredItems;
+    /* Insert at the head of the node's doubly-linked list. */
+    mon->sampling.nodeList.prev = NULL;
+    mon->sampling.nodeList.next = node->head.monitoredItems;
+    if(node->head.monitoredItems)
+        node->head.monitoredItems->sampling.nodeList.prev = mon;
     node->head.monitoredItems = mon;
     return UA_STATUSCODE_GOOD;
 }
@@ -1252,24 +1256,18 @@ addMonitoredItemBackpointer(UA_Server *server, UA_Session *session,
 static UA_StatusCode
 removeMonitoredItemBackPointer(UA_Server *server, UA_Session *session,
                                UA_Node *node, void *data) {
-    if(!node->head.monitoredItems)
-        return UA_STATUSCODE_GOOD;
-
-    /* Edge case that it's the first element */
     UA_MonitoredItem *remove = (UA_MonitoredItem*)data;
-    if(node->head.monitoredItems == remove) {
-        node->head.monitoredItems = remove->sampling.nodeListNext;
-        return UA_STATUSCODE_GOOD;
-    }
 
-    UA_MonitoredItem *prev = node->head.monitoredItems;
-    UA_MonitoredItem *entry = prev->sampling.nodeListNext;
-    for(; entry != NULL; prev = entry, entry = entry->sampling.nodeListNext) {
-        if(entry == remove) {
-            prev->sampling.nodeListNext = entry->sampling.nodeListNext;
-            break;
-        }
-    }
+    /* Unlink from the node's doubly-linked list in O(1). The item is always
+     * part of this node's list, so no search is required. */
+    if(remove->sampling.nodeList.prev)
+        remove->sampling.nodeList.prev->sampling.nodeList.next =
+            remove->sampling.nodeList.next;
+    else /* remove was the list head */
+        node->head.monitoredItems = remove->sampling.nodeList.next;
+    if(remove->sampling.nodeList.next)
+        remove->sampling.nodeList.next->sampling.nodeList.prev =
+            remove->sampling.nodeList.prev;
 
     return UA_STATUSCODE_GOOD;
 }

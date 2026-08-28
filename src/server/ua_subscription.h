@@ -157,7 +157,16 @@ struct UA_MonitoredItem {
     UA_MonitoredItemSamplingType samplingType;
     union {
         UA_UInt64 callbackId;
-        UA_MonitoredItem *nodeListNext; /* Event-Based: Attached to Node */
+        struct {
+            UA_MonitoredItem *next; /* Next MonitoredItem on the same node */
+            UA_MonitoredItem *prev; /* Previous element, or NULL for the head.
+                                     * Points to the neighbour element, NEVER to
+                                     * the NodeHead: the per-node list is copied
+                                     * by value together with the Node (copy-on-
+                                     * write), so it must carry no back-pointer
+                                     * into the head. */
+        } nodeList; /* Event-Based: doubly-linked list attached to the Node,
+                     * enabling O(1) removal (see add/removeMonitoredItemBackPointer). */
         LIST_ENTRY(UA_MonitoredItem) subscriptionSampling; /* Linked to publish
                                                             * interval */
     } sampling;
