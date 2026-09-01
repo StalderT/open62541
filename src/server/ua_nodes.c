@@ -577,6 +577,11 @@ copyNode(const UA_Node *src, UA_Node *dst, UA_Boolean copyMonitoredItems) {
     dsthead->context = srchead->context;
     dsthead->constructed = srchead->constructed;
 #ifdef UA_ENABLE_SUBSCRIPTIONS
+    /* monitoredItems is OPAQUE to the node copy: an actual copy (new NodeId) owns
+     * none (NULL) ; a write-on-copy replacement keeps the very same list head by
+     * value (cf PR #8363). The ziptree edits nodes IN-SITU (getEditNode == getNode),
+     * so a live node's address is stable and the intrusive-list back-pointers
+     * (LIST_* / le_prev) stay valid -> nothing to re-anchor here. */
     dsthead->monitoredItems = copyMonitoredItems ? srchead->monitoredItems : NULL;
 #else
     (void)copyMonitoredItems;
